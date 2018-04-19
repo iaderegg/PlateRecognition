@@ -17,13 +17,19 @@ import org.opencv.android.OpenCVLoader;
 import org.opencv.core.Core;
 import org.opencv.core.CvType;
 import org.opencv.core.Mat;
+import org.opencv.core.MatOfPoint;
+import org.opencv.core.Scalar;
+import org.opencv.core.Size;
 import org.opencv.imgproc.Imgproc;
+
+import java.util.ArrayList;
+import java.util.List;
 
 public class MainActivity extends AppCompatActivity implements CameraBridgeViewBase.CvCameraViewListener2 {
 
     private static final String TAG = "MainActivity";
     JavaCameraView javaCameraView;
-    Mat mRgba, imgGray, imgCanny;
+    Mat mRgba, imgGray, imgCanny, imgThreshold, mHierarchy;
 
     BaseLoaderCallback mLoaderCallback = new BaseLoaderCallback(this) {
         @Override
@@ -40,7 +46,6 @@ public class MainActivity extends AppCompatActivity implements CameraBridgeViewB
             }
         }
     };
-
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -86,8 +91,9 @@ public class MainActivity extends AppCompatActivity implements CameraBridgeViewB
     public void onCameraViewStarted(int width, int height) {
         mRgba = new Mat(height, width, CvType.CV_8UC4);
         imgGray = new Mat(height, width, CvType.CV_8UC1);
+        imgThreshold = new Mat(height, width, CvType.CV_8UC1);
         imgCanny = new Mat(height, width, CvType.CV_8UC1);
-
+        mHierarchy = new Mat();
     }
 
     @Override
@@ -97,8 +103,27 @@ public class MainActivity extends AppCompatActivity implements CameraBridgeViewB
 
     @Override
     public Mat onCameraFrame(CameraBridgeViewBase.CvCameraViewFrame inputFrame) {
+        // Captura en RGB
         mRgba = inputFrame.rgba();
+        // Conversión a escala de grises
         Imgproc.cvtColor(mRgba, imgGray, Imgproc.COLOR_RGB2GRAY);
+        // Remuestreo factor de 4
+        org.opencv.core.Size s = new Size(3,3);
+        // Filtro Gaussiano
+        Imgproc.GaussianBlur(imgGray, imgGray, s, 2);
+        // Filtro Laplaciano
+        Imgproc.Laplacian(imgGray, imgGray, CvType.CV_8U, 3, 1, 0);
+
+        Imgproc.threshold(imgGray, imgThreshold, 0, 255, Imgproc.THRESH_BINARY + Imgproc.THRESH_OTSU);
+
+        List<MatOfPoint> contours = new ArrayList<MatOfPoint>();
+
+        Imgproc.findContours(imgThreshold, contours, mHierarchy, Imgproc.RETR_EXTERNAL, Imgproc.CHAIN_APPROX_SIMPLE);
+
+        Imgproc.drawContours(imgGray, contours, -1, new Scalar(Math.random()*255, Math.random()*255, Math.random()*255));//, 2, 8, hierarchy, 0, new Point());
+
+
+
         return imgGray;
     }
 
