@@ -18,11 +18,13 @@ import org.opencv.core.Core;
 import org.opencv.core.CvType;
 import org.opencv.core.Mat;
 import org.opencv.core.MatOfPoint;
+import org.opencv.core.Rect;
 import org.opencv.core.Scalar;
 import org.opencv.core.Size;
 import org.opencv.imgproc.Imgproc;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 
 public class MainActivity extends AppCompatActivity implements CameraBridgeViewBase.CvCameraViewListener2 {
@@ -120,11 +122,26 @@ public class MainActivity extends AppCompatActivity implements CameraBridgeViewB
 
         Imgproc.findContours(imgThreshold, contours, mHierarchy, Imgproc.RETR_EXTERNAL, Imgproc.CHAIN_APPROX_SIMPLE);
 
-        Imgproc.drawContours(imgGray, contours, -1, new Scalar(Math.random()*255, Math.random()*255, Math.random()*255));//, 2, 8, hierarchy, 0, new Point());
+        //Imgproc.drawContours(imgGray, contours, -1, new Scalar(Math.random()*255, Math.random()*255, Math.random()*255));//, 2, 8, hierarchy, 0, new Point());
 
+        double maxArea = 0;
+        int idxMax = 0;
+        for (int i = 0; i < contours.size(); i++) {
+            double rozmiar = Math.abs(Imgproc.contourArea(contours.get(i)));
+            if (rozmiar > maxArea) {
+                maxArea = rozmiar;
+                idxMax = i;
+            }
+        }
 
+        Imgproc.drawContours(mRgba, contours, idxMax, new Scalar(100, 255, 99, 255), Core.FILLED);
 
-        return imgGray;
+        if (contours.size() >= 1) {
+            Rect r = Imgproc.boundingRect(contours.get(idxMax));
+            Imgproc.rectangle(mRgba, r.tl(), r.br(), new Scalar(255, 0, 0, 255), 3, 8, 0); //draw rectangle
+        }
+
+        return mRgba;
     }
 
 }
