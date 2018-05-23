@@ -22,16 +22,19 @@ import org.opencv.core.Rect;
 import org.opencv.core.Scalar;
 import org.opencv.core.Size;
 import org.opencv.imgproc.Imgproc;
+import org.opencv.imgcodecs.Imgcodecs;
 
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
+import static org.opencv.core.Core.FILLED;
+
 public class MainActivity extends AppCompatActivity implements CameraBridgeViewBase.CvCameraViewListener2 {
 
     private static final String TAG = "MainActivity";
     JavaCameraView javaCameraView;
-    Mat mRgba, imgGray, imgCanny, imgThreshold, mHierarchy;
+    Mat mRgba, imgGray, imgCanny, imgThreshold, mHierarchy,cropImage;
 
     BaseLoaderCallback mLoaderCallback = new BaseLoaderCallback(this) {
         @Override
@@ -96,6 +99,8 @@ public class MainActivity extends AppCompatActivity implements CameraBridgeViewB
         imgThreshold = new Mat(height, width, CvType.CV_8UC1);
         imgCanny = new Mat(height, width, CvType.CV_8UC1);
         mHierarchy = new Mat();
+
+
     }
 
     @Override
@@ -119,10 +124,9 @@ public class MainActivity extends AppCompatActivity implements CameraBridgeViewB
         Imgproc.threshold(imgGray, imgThreshold, 0, 255, Imgproc.THRESH_BINARY + Imgproc.THRESH_OTSU);
 
         List<MatOfPoint> contours = new ArrayList<MatOfPoint>();
+        List<MatOfPoint> contours_selected = new ArrayList<MatOfPoint>();
 
         Imgproc.findContours(imgThreshold, contours, mHierarchy, Imgproc.RETR_EXTERNAL, Imgproc.CHAIN_APPROX_SIMPLE);
-
-        //Imgproc.drawContours(imgGray, contours, -1, new Scalar(Math.random()*255, Math.random()*255, Math.random()*255));//, 2, 8, hierarchy, 0, new Point());
 
         double maxArea = 0;
         int idxMax = 0;
@@ -134,12 +138,22 @@ public class MainActivity extends AppCompatActivity implements CameraBridgeViewB
             }
         }
 
-        Imgproc.drawContours(mRgba, contours, idxMax, new Scalar(100, 255, 99, 255), Core.FILLED);
+        //Imgproc.drawContours(mRgba, contours, idxMax, new Scalar(100, 255, 99, 255), Core.FILLED);
 
         if (contours.size() >= 1) {
             Rect r = Imgproc.boundingRect(contours.get(idxMax));
-            Imgproc.rectangle(mRgba, r.tl(), r.br(), new Scalar(255, 0, 0, 255), 3, 8, 0); //draw rectangle
+            if(r.width/r.height == 2){
+                Imgproc.rectangle(mRgba, r.tl(), r.br(), new Scalar(255, 0, 0, 255), 3, 8, 0); //draw rectangle
+                Mat ROI = mRgba.submat(r.x, r.x + r.height, r.x, r.x + r.width);
+
+                Imgcodecs.imwrite("/storage/emulated/0/DCIM/Camera/plate.png",ROI);
+
+                //onCameraViewStopped();
+            }
+
         }
+
+
 
         return mRgba;
     }
