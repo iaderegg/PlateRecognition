@@ -1,5 +1,6 @@
 package com.example.iaderegg.platerecognition;
 
+import android.os.Environment;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.util.Log;
@@ -24,6 +25,7 @@ import org.opencv.core.Size;
 import org.opencv.imgproc.Imgproc;
 import org.opencv.imgcodecs.Imgcodecs;
 
+import java.io.File;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -138,17 +140,25 @@ public class MainActivity extends AppCompatActivity implements CameraBridgeViewB
             }
         }
 
-        //Imgproc.drawContours(mRgba, contours, idxMax, new Scalar(100, 255, 99, 255), Core.FILLED);
-
         if (contours.size() >= 1) {
             Rect r = Imgproc.boundingRect(contours.get(idxMax));
+            Log.d(TAG, "X:: "+r.x+" Y:: "+r.y+" Ratio:: "+r.width/r.height+" Height:: "+r.height+" Width:: "+r.width);
             if(r.width/r.height == 2){
                 Imgproc.rectangle(mRgba, r.tl(), r.br(), new Scalar(255, 0, 0, 255), 3, 8, 0); //draw rectangle
-                Mat ROI = mRgba.submat(r.x, r.x + r.height, r.x, r.x + r.width);
 
-                Imgcodecs.imwrite("/storage/emulated/0/DCIM/Camera/plate.png",ROI);
+                File path = new File(Environment.getExternalStorageDirectory() + "/DCIM/Camera/PlateRecognition/");
+                path.mkdirs();
+                File file = new File(path, "plate.jpg");
+                String filename = file.toString();
 
-                //onCameraViewStopped();
+                Mat ROI = mRgba.submat(r);
+                Log.d(TAG, ""+ROI);
+
+                boolean result = Imgcodecs.imwrite(filename+"", ROI);
+
+                Log.d(TAG, ""+result);
+
+                onCameraViewStopped();
             }
 
         }
