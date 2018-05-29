@@ -1,5 +1,6 @@
 package com.example.iaderegg.platerecognition;
 
+import android.content.Intent;
 import android.os.Environment;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
@@ -35,8 +36,10 @@ import static org.opencv.core.Core.FILLED;
 public class MainActivity extends AppCompatActivity implements CameraBridgeViewBase.CvCameraViewListener2 {
 
     private static final String TAG = "MainActivity";
+    Intent intent_ltdetector;
     JavaCameraView javaCameraView;
     Mat mRgba, imgGray, imgCanny, imgThreshold, mHierarchy,cropImage;
+    private static int counter = 0;
 
     BaseLoaderCallback mLoaderCallback = new BaseLoaderCallback(this) {
         @Override
@@ -112,6 +115,9 @@ public class MainActivity extends AppCompatActivity implements CameraBridgeViewB
 
     @Override
     public Mat onCameraFrame(CameraBridgeViewBase.CvCameraViewFrame inputFrame) {
+
+        File path;
+        String path_name = "";
         // Captura en RGB
         mRgba = inputFrame.rgba();
         // Conversión a escala de grises
@@ -132,6 +138,9 @@ public class MainActivity extends AppCompatActivity implements CameraBridgeViewB
 
         double maxArea = 0;
         int idxMax = 0;
+
+
+
         for (int i = 0; i < contours.size(); i++) {
             double rozmiar = Math.abs(Imgproc.contourArea(contours.get(i)));
             if (rozmiar > maxArea) {
@@ -140,25 +149,29 @@ public class MainActivity extends AppCompatActivity implements CameraBridgeViewB
             }
         }
 
-        if (contours.size() >= 1) {
+        if (contours.size() >= 1 && counter < 5) {
             Rect r = Imgproc.boundingRect(contours.get(idxMax));
             Log.d(TAG, "X:: "+r.x+" Y:: "+r.y+" Ratio:: "+r.width/r.height+" Height:: "+r.height+" Width:: "+r.width);
-            if(r.width/r.height == 2){
+            if(r.width/r.height > 1.8 && r.width/r.height < 2.2){
                 Imgproc.rectangle(mRgba, r.tl(), r.br(), new Scalar(255, 0, 0, 255), 3, 8, 0); //draw rectangle
 
-                File path = new File(Environment.getExternalStorageDirectory() + "/DCIM/Camera/PlateRecognition/");
+                path = new File(Environment.getExternalStorageDirectory() + "/DCIM/Camera/PlateRecognition/");
                 path.mkdirs();
                 File file = new File(path, "plate.jpg");
                 String filename = file.toString();
 
                 Mat ROI = mRgba.submat(r);
-                Log.d(TAG, ""+ROI);
 
                 boolean result = Imgcodecs.imwrite(filename+"", ROI);
+                counter++;
 
-                Log.d(TAG, ""+result);
+                if(counter >= 4){
+                    intent_ltdetector =new Intent(this, LtDetector.class);
+                    intent_ltdetector.putExtra("message",Environment.getExternalStorageDirectory() + "/DCIM/Camera/PlateRecognition/plate.png");
+                    mRgba.release();
+                    startActivity(intent_ltdetector);
 
-                onCameraViewStopped();
+                }
             }
 
         }
